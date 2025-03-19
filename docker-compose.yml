@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  anibox:
+    build: .
+    image: anibox
+    container_name: anibox
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - /image:/image
+      - ./log:/app/log/
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=your_password
+      - MYSQL_DATABASE=anibox
+    ports:
+      - "3306:3306"
+    command: [
+      "--character-set-server=utf8mb4",
+      "--collation-server=utf8mb4_unicode_ci"
+    ]
+    volumes:
+      - ./mysql:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./conf:/usr/local/etc/redis/
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
