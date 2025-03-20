@@ -308,9 +308,9 @@ public class ImageService {
     ResponseEntity<JSONObject> returnData(List<Image> images) {
         List<JSONObject> imageJsonList = new ArrayList<>();
         images.forEach(image -> imageJsonList.add(getReturnData(image)));
-        if (imageJsonList.size() == 1) {
-            return success(images.getFirst());
-        }
+        //if (imageJsonList.size() == 1) {
+        //    return success(images.getFirst());
+        //}
         return success(imageJsonList);
     }
 
