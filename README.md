@@ -2,6 +2,18 @@
 
 一个Java语言编写的纯API无页面图床.
 
+## 运行环境
+- JDK 21
+- MySQL 8.0
+- Redis 7.4
+
+## 技术选型
+- Spring Boot 3.4.3
+- Spring Security
+- MyBatis Plus
+- MySQL
+- JWT认证
+
 ## 开始使用
 
 ### 图床注册
