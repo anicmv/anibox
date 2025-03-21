@@ -154,7 +154,7 @@ public class ImageController {
      *
      * @return 图片
      */
-    @GetMapping("/r")
+    @GetMapping("/random")
     public ResponseEntity<InputStreamResource> randomImage() {
         return imageViewService.random();
     }

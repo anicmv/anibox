@@ -23,7 +23,7 @@ public class WebSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, TokenAuthenticationFilter tokenAuthenticationFilter) throws Exception {
         return httpSecurity
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/token", "/i/**", "/r", "/a/**").permitAll()  //放行token和图片访问
+                        .requestMatchers("/token", "/i/**", "/random", "/a/**").permitAll()  //放行token和图片访问
                         .anyRequest()
                         .authenticated()
                 )
