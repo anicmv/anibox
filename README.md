@@ -14,9 +14,6 @@
 - MySQL
 - JWT认证
 
-## 不会搭建?
-> 可以到[Telegram群组](https://t.me/+q5wtfnj0kTs4MTRl)来讨论各种问题
-
 ## 开始使用
 
 ### 图床注册
@@ -415,7 +412,8 @@ GET /random
 - [ ] 支持文件与链接一起上传
 - [ ] 随机图片加用户限制
 
-
+## 不会搭建?
+> 可以到[Telegram群组](https://t.me/+q5wtfnj0kTs4MTRl)来讨论各种问题
 
 
 
