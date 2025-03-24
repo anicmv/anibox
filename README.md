@@ -14,6 +14,9 @@
 - MySQL
 - JWT认证
 
+## 不会搭建?
+> 可以到[Telegram群组](https://t.me/+q5wtfnj0kTs4MTRl)来讨论各种问题
+
 ## 开始使用
 
 ### 图床注册
