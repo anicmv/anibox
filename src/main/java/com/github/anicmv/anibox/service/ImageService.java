@@ -5,15 +5,14 @@ import cn.hutool.core.img.ImgUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.github.anicmv.anibox.entity.Image;
-import com.github.anicmv.anibox.entity.User;
+import com.github.anicmv.anibox.entity.*;
 import com.github.anicmv.anibox.enums.ImageEnum;
-import com.github.anicmv.anibox.mapper.ImageMapper;
-import com.github.anicmv.anibox.mapper.UserMapper;
+import com.github.anicmv.anibox.mapper.*;
 import com.github.anicmv.anibox.utils.ImageUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.log4j.Log4j2;
@@ -34,9 +33,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author anicmv
@@ -52,6 +52,19 @@ public class ImageService {
     @Resource
     private UserMapper userMapper;
 
+    @Resource
+    private TagMapper tagMapper;
+
+    @Resource
+    private ImageTagMapper imageTagMapper;
+
+    @Resource
+    private AlbumMapper albumMapper;
+
+    @Resource
+    private ImageAlbumMapper imageAlbumMapper;
+
+
     Image selectImageByMd5AndSha1(String md5, String sha1) {
         QueryWrapper<Image> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("md5", md5);
@@ -62,18 +75,6 @@ public class ImageService {
 
     Image findImage(InputStream is) {
         return selectImageByMd5AndSha1(DigestUtil.md5Hex(is), DigestUtil.sha1Hex(is));
-    }
-
-
-    Image.ImageBuilder getImageBuilder(String album) {
-        Image.ImageBuilder imageBuilder = Image.builder();
-        if (ObjectUtil.isNotEmpty(album)) {
-            imageBuilder.album(album);
-        }
-        imageBuilder.shortKey(getShortKey())
-                .createdAt(new Date())
-                .updatedAt(new Date());
-        return imageBuilder;
     }
 
 
@@ -104,7 +105,8 @@ public class ImageService {
 
     /**
      * 获取图片路径
-     * @param user 用户
+     *
+     * @param user         用户
      * @param imageBuilder image构建器
      */
     Path getImagePath(User user, Image.ImageBuilder imageBuilder) {
@@ -193,7 +195,9 @@ public class ImageService {
     Image saveImageInfo(Image.ImageBuilder imageBuilder) {
         Image image = imageBuilder.build();
         imageMapper.insert(image);
-        // 返回存储位置的访问路径（实际情况需要配合静态资源映射或另外提供图片访问接口）
+        // 返回存储位置的访问路径（实际情况需// ImageTag ImageAlbum
+        //        List<ImageTag> imageTagList = new ArrayList<>();
+        //        List<ImageAlbum> imageAlbumList = new ArrayList<>();ge要配合静态资源映射或另外提供图片访问接口）
         return image;
     }
 
@@ -207,40 +211,39 @@ public class ImageService {
     }
 
 
-    ResponseEntity<JSONObject> success(Image image) {
-        JSONObject result = JSONUtil.createObj()
-                .putOpt("result", ImageEnum.SUCCESS.getResult())
-                .putOnce("code", ImageEnum.SUCCESS.getCode())
-                .putOnce("data", getReturnData(image));
-        return ResponseEntity.ok().body(result);
-    }
-
-
     ResponseEntity<JSONObject> success(List<JSONObject> imageJsonList) {
         JSONObject result = JSONUtil.createObj()
                 .putOpt("result", ImageEnum.SUCCESS.getResult())
-                .putOnce("code", ImageEnum.SUCCESS.getCode())
-                .putOnce("data", imageJsonList);
+                .putOpt("code", ImageEnum.SUCCESS.getCode())
+                .putOpt("data", imageJsonList);
         return ResponseEntity.ok().body(result);
     }
 
 
     JSONObject getReturnData(Image image) {
         String url = getUrl(image.getName());
+
         JSONObject data = JSONUtil.createObj()
                 .putOpt("id", image.getId())
                 .putOpt("shortUrl", getUrl(image.getShortKey() + "." + image.getSuffix()))
-                .putOnce("url", url)
-                .putOnce("originName", image.getOriginName())
-                .putOnce("album", image.getAlbum())
-                .putOnce("size", image.getSize())
-                .putOnce("md5", image.getMd5())
-                .putOnce("sha1", image.getSha1())
-                .putOnce("width", image.getWidth())
-                .putOnce("height", image.getHeight())
-                .putOnce("markdown", ImageUtil.markdownStr(image.getOriginName(), url))
-                .putOnce("html", ImageUtil.htmlStr(image.getOriginName(), url))
-                .putOnce("bbcode", ImageUtil.bbcodeStr(url));
+                .putOpt("url", url)
+                .putOpt("originName", image.getOriginName())
+                .putOpt("size", image.getSize())
+                .putOpt("md5", image.getMd5())
+                .putOpt("sha1", image.getSha1())
+                .putOpt("width", image.getWidth())
+                .putOpt("height", image.getHeight())
+                .putOpt("markdown", ImageUtil.markdownStr(image.getOriginName(), url))
+                .putOpt("html", ImageUtil.htmlStr(image.getOriginName(), url))
+                .putOpt("bbcode", ImageUtil.bbcodeStr(url));
+        List<Tag> tagList = tagMapper.selectDistinctTagNames(image.getId());
+        if (tagList != null) {
+            data.putOpt("tags", tagList.stream().map(Tag::getName).collect(Collectors.joining(",")));
+        }
+        List<Album> albumList = albumMapper.selectDistinctAlbumNames(image.getId());
+        if (albumList != null) {
+            data.putOpt("albums", albumList.stream().map(Album::getName).collect(Collectors.joining(",")));
+        }
         if (image.getAliasName() != null) {
             data.putOnce("aliasUrl", getUrl(image.getAliasName() + "." + image.getSuffix()));
         }
@@ -275,7 +278,6 @@ public class ImageService {
 
     List<Image> getImageList(String ids, String urls) {
         List<Image> imageList = new ArrayList<>();
-        // 1.根据id删除
         if (ObjectUtil.isNotEmpty(ids)) {
             List<Image> images = imageMapper.selectByIds(Arrays.asList(ids.split(",")));
             imageList.addAll(images);
@@ -308,9 +310,6 @@ public class ImageService {
     ResponseEntity<JSONObject> returnData(List<Image> images) {
         List<JSONObject> imageJsonList = new ArrayList<>();
         images.forEach(image -> imageJsonList.add(getReturnData(image)));
-        //if (imageJsonList.size() == 1) {
-        //    return success(images.getFirst());
-        //}
         return success(imageJsonList);
     }
 
@@ -325,7 +324,7 @@ public class ImageService {
     @Resource(name = "binaryRedisTemplate")
     private RedisTemplate<String, byte[]> binaryRedisTemplate;
 
-    InputStream readFromRedis(String countName, String imageName) {
+    public InputStream readFromRedis(String countName, String imageName) {
         // 从 Redis 获取图片的字节数组
         byte[] retrievedImageData = binaryRedisTemplate.opsForValue().get(imageName);
         if (retrievedImageData == null) {
@@ -340,7 +339,7 @@ public class ImageService {
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
-    void writeImageToRedis(String imageName, Path filePath) {
+    public void writeImageToRedis(String imageName, Path filePath) {
         String name = filePath.toFile().getName();
         writeToRedis(name, imageName, filePath, null);
     }
@@ -372,7 +371,158 @@ public class ImageService {
         }
     }
 
-    void writeAvatarToRedis(String countName, String imageName, byte[] imageByte) {
+    public void writeAvatarToRedis(String countName, String imageName, byte[] imageByte) {
         writeToRedis(countName, imageName, null, imageByte);
+    }
+
+
+    public List<Tag> saveTags(String tags) {
+        if (tags == null) {
+            return null;
+        }
+        // 分割、修剪并去重
+        List<String> tagNames = StrUtil.split(tags, ",").stream()
+                .map(String::trim)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 查询已存在的标签
+        QueryWrapper<Tag> queryWrapper = new QueryWrapper<>();
+        queryWrapper.in("name", tagNames);
+        List<Tag> existTags = tagMapper.selectList(queryWrapper);
+
+        // 将已存在的标签放入 Set 中，便于判断
+        Set<String> existTagNames = existTags.stream()
+                .map(Tag::getName)
+                .collect(Collectors.toSet());
+
+        List<Tag> result = new ArrayList<>();
+
+        for (String tagName : tagNames) {
+            if (existTagNames.contains(tagName)) {
+                // 已存在的标签取出来
+                Tag existTag = existTags.stream()
+                        .filter(t -> t.getName().equals(tagName))
+                        .findFirst()
+                        .orElse(null);
+                result.add(existTag);
+            } else {
+                // 新建标签并插入数据库
+                Tag newTag = Tag.builder().name(tagName).build();
+                tagMapper.insert(newTag);
+                result.add(newTag);
+            }
+        }
+
+        return result;
+    }
+
+    public List<Album> saveAlbums(String albums) {
+        if (albums == null) {
+            return null;
+        }
+        // 分割、修剪并去重
+        List<String> albumNames = StrUtil.split(albums, ",").stream()
+                .map(String::trim)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 查询已存在的标签
+        QueryWrapper<Album> queryWrapper = new QueryWrapper<>();
+        queryWrapper.in("name", albumNames);
+        List<Album> existTags = albumMapper.selectList(queryWrapper);
+
+        // 将已存在的标签放入 Set 中，便于判断
+        Set<String> existTagNames = existTags.stream()
+                .map(Album::getName)
+                .collect(Collectors.toSet());
+
+        List<Album> result = new ArrayList<>();
+
+        for (String album : albumNames) {
+            if (existTagNames.contains(album)) {
+                // 已存在的标签取出来
+                Album existAlbum = existTags.stream()
+                        .filter(t -> t.getName().equals(album))
+                        .findFirst()
+                        .orElse(null);
+                result.add(existAlbum);
+            } else {
+                // 新建相册并插入数据库
+                Album newAlbum = Album.builder().name(album).build();
+                albumMapper.insert(newAlbum);
+                result.add(newAlbum);
+            }
+        }
+
+        return result;
+    }
+
+
+    public List<Tag> selectTagList(String tags) {
+        if (StrUtil.isEmpty(tags)) {
+            return null;
+        }
+        List<String> tagList = Arrays.stream(tags.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .collect(Collectors.toList());
+
+        QueryWrapper<Tag> qw = new QueryWrapper<>();
+        qw.in("name", tagList);
+
+        return tagMapper.selectList(qw);
+    }
+
+
+    public List<Album> selectAlbumList(String albums) {
+        if (StrUtil.isEmpty(albums)) {
+            return null;
+        }
+        List<String> albumList = Arrays.stream(albums.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .collect(Collectors.toList());
+
+        QueryWrapper<Album> qw = new QueryWrapper<>();
+        qw.in("name", albumList);
+
+        return albumMapper.selectList(qw);
+    }
+
+
+    public void saveAlbumList(List<ImageAlbum> imageAlbumList) {
+        if (imageAlbumList != null && !imageAlbumList.isEmpty()) {
+            imageAlbumMapper.insertOrUpdateBatch(imageAlbumList);
+        }
+    }
+
+    public void saveTagList(List<ImageTag> imageTagList) {
+        if (imageTagList != null && !imageTagList.isEmpty()) {
+            imageTagMapper.insertOrUpdateBatch(imageTagList);
+        }
+    }
+
+
+    public List<Tag> getDistinctTag(Long imageId) {
+        return tagMapper.selectDistinctTagNames(imageId);
+    }
+
+    public List<Album> getDistinctAlbum(Long imageId) {
+        return albumMapper.selectDistinctAlbumNames(imageId);
+    }
+
+    public void deleteImageAlbum(List<Long> imageIds) {
+        QueryWrapper<ImageAlbum> albumWrapper = new QueryWrapper<>();
+        albumWrapper.in("image_id", imageIds);
+        imageAlbumMapper.delete(albumWrapper);
+    }
+
+    public void deleteImageTag(List<Long> tagIds) {
+        QueryWrapper<ImageTag> albumWrapper = new QueryWrapper<>();
+        albumWrapper.in("image_id", tagIds);
+        imageTagMapper.delete(albumWrapper);
     }
 }

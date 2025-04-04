@@ -2,8 +2,7 @@ package com.github.anicmv.anibox.service;
 
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.json.JSONObject;
-import com.github.anicmv.anibox.entity.Image;
-import com.github.anicmv.anibox.entity.User;
+import com.github.anicmv.anibox.entity.*;
 import com.github.anicmv.anibox.utils.ImageUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
@@ -11,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -29,9 +29,11 @@ import java.util.List;
 public class ImageUploadFileService extends ImageService {
 
 
+    @Transactional(rollbackFor = Exception.class)
     public ResponseEntity<JSONObject> uploadFile(
             MultipartFile[] files,
-            String album,
+            String albums,
+            String tags,
             HttpServletRequest request,
             String aliasName,
             Authentication auth
@@ -42,24 +44,83 @@ public class ImageUploadFileService extends ImageService {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 
-
         if (files == null) {
             return super.error("Empty file");
         }
+
         List<MultipartFile> fileList = new ArrayList<>(Arrays.stream(files).toList());
+
+        // 重复文件
         List<MultipartFile> toBeRemoved = new ArrayList<>();
-        // 2.文件不存在
-        if (fileList.isEmpty()) {
-            return super.error("Empty file");
-        }
 
         List<Image> imageList = new ArrayList<>();
         int size = fileList.size();
+
+        // 存储tag
+        List<Tag> tagList = tags != null ? super.saveTags(tags) : null;
+
+        // 存储album
+        List<Album> albumsList = albums != null ? super.saveAlbums(albums) : null;
+
+        // 重复文件处理
+        duplicateFileProcess(fileList, imageList, toBeRemoved);
+        // 自定义名字重复处理
+        String finalAliasName = aliseNameProcess(size, aliasName);
+
+        // ImageTag ImageAlbum
+        List<ImageTag> imageTagList = new ArrayList<>();
+        List<ImageAlbum> imageAlbumList = new ArrayList<>();
+
+        // 上传
+        fileList.forEach(file -> {
+            Image image = saveImage(request, file, user, finalAliasName);
+            imageList.add(image);
+        });
+
+        // 有个bug 存量图片 返回数据不更新tag album
+        imageList.forEach(image -> {
+            // 根据image查询tag album
+            if (tags != null) {
+                tagList.forEach(tag -> {
+                    ImageTag imageTag = ImageTag.builder()
+                            .imageId(image.getId())
+                            .tagId(tag.getId()).build();
+                    imageTagList.add(imageTag);
+                });
+            }
+
+            if (albums != null) {
+                albumsList.forEach(album -> {
+                    ImageAlbum imageAlbum = ImageAlbum.builder()
+                            .imageId(image.getId())
+                            .albumId(album.getId()).build();
+                    imageAlbumList.add(imageAlbum);
+                });
+            }
+        });
+
+        // 保存ImageTag ImageAlbum
+        super.saveAlbumList(imageAlbumList);
+        super.saveTagList(imageTagList);
+        super.updateUserImageCount(user, fileList.size());
+        // 返回数据携带tags,albums
+        return super.returnData(imageList);
+    }
+
+
+    /**
+     * 重复文件处理
+     *
+     * @param fileList    文件列表
+     * @param imageList   image列表
+     * @param toBeRemoved 重复文件列表
+     */
+    private void duplicateFileProcess(List<MultipartFile> fileList, List<Image> imageList, List<MultipartFile> toBeRemoved) {
         fileList.forEach(file -> {
             try {
-                // 3.文件重复
                 Image image = super.findImage(file.getInputStream());
                 if (image != null) {
+                    // 文件重复
                     imageList.add(image);
                     toBeRemoved.add(file);
                 }
@@ -67,36 +128,38 @@ public class ImageUploadFileService extends ImageService {
                 log.error(e.getMessage());
             }
         });
+        // 剔除重复文件
         fileList.removeAll(toBeRemoved);
-        // 4.自定义名字重复
+    }
+
+    /**
+     * 处理自定义文件名
+     *
+     * @param size      文件数量数量
+     * @param aliasName 自定义文件名
+     */
+    private String aliseNameProcess(int size, String aliasName) {
         if (size == 1 && super.checkAliseName(aliasName)) {
             log.error("自定义文件名重复");
             aliasName = null;
         }
+        // 不支持多文件自定义名
         if (size > 1) {
             aliasName = null;
         }
 
-        String finalAliasName = aliasName;
-        fileList.forEach(file -> {
-            String originalFilename = file.getOriginalFilename();
-            Image.ImageBuilder imageBuilder = super.getImageBuilder(album);
-            String ipAddress = ImageUtil.extractClientIp(request);
-            imageBuilder.uploadedIp(ipAddress);
-            Image image = saveImage(file, user, imageBuilder, originalFilename, finalAliasName);
-            imageList.add(image);
-        });
-
-        super.updateUserImageCount(user, fileList.size());
-        // 3.存储图片
-        return super.returnData(imageList);
+        return aliasName;
     }
 
 
-    private Image saveImage(MultipartFile file, User user, Image.ImageBuilder imageBuilder, String fileName, String aliasName) {
+    private Image saveImage(HttpServletRequest request, MultipartFile file, User user, String aliasName) {
+        String originalFilename = file.getOriginalFilename();
+        Image.ImageBuilder imageBuilder = Image.builder()
+                .uploadedIp(ImageUtil.extractClientIp(request))
+                .shortKey(getShortKey());
         // 获取文件后缀，并生成唯一的文件名
-        String prefix = FileNameUtil.getPrefix(fileName);
-        String suffix = FileNameUtil.getSuffix(fileName);
+        String prefix = FileNameUtil.getPrefix(originalFilename);
+        String suffix = FileNameUtil.getSuffix(originalFilename);
 
         super.setFileAttribute(file, imageBuilder);
         // 保存图片到本地磁盘

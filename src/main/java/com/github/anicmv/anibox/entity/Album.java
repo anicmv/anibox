@@ -16,50 +16,20 @@ import java.sql.Timestamp;
  */
 @Data
 @Builder
-public class User implements Serializable {
+public class Album implements Serializable {
 
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
     /**
-     * 用户名
+     * 标签名称
      */
-    private String username;
+    private String name;
 
     /**
-     * 密码
+     * 相册描述
      */
-    private String password;
-
-    /**
-     * 角色
-     */
-    private String roles;
-
-    /**
-     * jwt密钥
-     */
-    private String saltKey;
-
-    /**
-     * jwt
-     */
-    private String token;
-
-    /**
-     * 图片根目录
-     */
-    private String rootPath;
-
-    /**
-     * 图片数量
-     */
-    private Long imageNum;
-
-    /**
-     * 状态
-     */
-    private Byte status;
+    private String description;
 
     // 创建时间
     @JsonFormat(shape = JsonFormat.Shape.NUMBER)

@@ -32,7 +32,6 @@ public class JwtService {
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
     public JSONObject generateToken(String username, String password, String rootPath) {
-        // todo 不让任何人都可以注册
         String passwordEncode = bCryptPasswordEncoder.encode(password);
         // 生成 JWT 密钥（Base64 格式的密钥字符串）
         String saltKey = ImageUtil.base64Key();

@@ -3,8 +3,7 @@ package com.github.anicmv.anibox.service;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.json.JSONObject;
-import com.github.anicmv.anibox.entity.Image;
-import com.github.anicmv.anibox.entity.User;
+import com.github.anicmv.anibox.entity.*;
 import com.github.anicmv.anibox.utils.ImageUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
@@ -33,8 +32,14 @@ import java.util.List;
 @Service
 public class ImageUploadLinkService extends ImageService {
 
-    public ResponseEntity<JSONObject> uploadLink(String imageUrls, String album
-            , HttpServletRequest request, String aliasName, Authentication auth) {
+    public ResponseEntity<JSONObject> uploadLink(
+            String imageUrls,
+            String albums,
+            String tags,
+            HttpServletRequest request,
+            String aliasName,
+            Authentication auth
+    ) {
         Object principal = auth.getPrincipal();
         if (!(principal instanceof User user)) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
@@ -49,14 +54,18 @@ public class ImageUploadLinkService extends ImageService {
         List<Image> toBeRemoved = new ArrayList<>();
         int size = imageUrlList.size();
 
-        if (size == 1 && super.checkAliseName(aliasName)) {
-            log.error("自定义文件名重复");
-            aliasName = null;
-        }
+        // 自定义名字重复处理
+        String finalAliasName = aliseNameProcess(size, aliasName);
 
-        if (size > 1) {
-            aliasName = null;
-        }
+        // 存储tag
+        List<Tag> tagList = tags != null ? super.saveTags(tags) : null;
+
+        // 存储album
+        List<Album> albumsList = albums != null ? super.saveAlbums(albums) : null;
+
+        // ImageTag ImageAlbum
+        List<ImageTag> imageTagList = new ArrayList<>();
+        List<ImageAlbum> imageAlbumList = new ArrayList<>();
 
         for (String imageUrl : imageUrlList) {
             HttpURLConnection connection = ImageUtil.getImageLinkConnection(imageUrl);
@@ -68,15 +77,33 @@ public class ImageUploadLinkService extends ImageService {
                 if (responseCode != HttpURLConnection.HTTP_OK) {
                     return super.error("Failed to download image, HTTP response code:" + responseCode);
                 }
-                Image.ImageBuilder imageBuilder = super.getImageBuilder(album);
+                Image.ImageBuilder imageBuilder = Image.builder().shortKey(super.getShortKey());
                 String ipAddress = ImageUtil.extractClientIp(request);
                 imageBuilder.uploadedIp(ipAddress);
                 InputStream is = connection.getInputStream();
                 // 1.先保存文件
-                File imageFile = saveImage(is, user, imageBuilder, imageUrl, aliasName);
+                File imageFile = saveImage(is, user, imageBuilder, imageUrl, finalAliasName);
                 // 3.文件重复
                 Image image = super.findImage(FileUtil.getInputStream(imageFile));
+
                 if (image != null) {
+                    if (tags != null) {
+                        tagList.forEach(tag -> {
+                            ImageTag imageTag = ImageTag.builder()
+                                    .imageId(image.getId())
+                                    .tagId(tag.getId()).build();
+                            imageTagList.add(imageTag);
+                        });
+                    }
+
+                    if (albums != null) {
+                        albumsList.forEach(album -> {
+                            ImageAlbum imageAlbum = ImageAlbum.builder()
+                                    .imageId(image.getId())
+                                    .albumId(album.getId()).build();
+                            imageAlbumList.add(imageAlbum);
+                        });
+                    }
                     // 删除文件
                     FileUtil.del(imageFile);
                     imageList.add(image);
@@ -89,7 +116,9 @@ public class ImageUploadLinkService extends ImageService {
                 log.error(e.getMessage());
             }
         }
-
+        // 保存ImageTag ImageAlbum
+        super.saveAlbumList(imageAlbumList);
+        super.saveTagList(imageTagList);
         super.updateUserImageCount(user, imageList.size() - toBeRemoved.size());
         return super.returnData(imageList);
     }
@@ -121,5 +150,24 @@ public class ImageUploadLinkService extends ImageService {
         return saveImageInfo(imageBuilder);
     }
 
+
+    /**
+     * 处理自定义文件名
+     *
+     * @param size      文件数量数量
+     * @param aliasName 自定义文件名
+     */
+    private String aliseNameProcess(int size, String aliasName) {
+        if (size == 1 && super.checkAliseName(aliasName)) {
+            log.error("自定义文件名重复");
+            aliasName = null;
+        }
+        // 不支持多文件自定义名
+        if (size > 1) {
+            aliasName = null;
+        }
+
+        return aliasName;
+    }
 
 }

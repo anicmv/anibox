@@ -36,10 +36,10 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
         String uri = request.getRequestURI();
-        if (uri.startsWith("/i/") || uri.startsWith("/random") || uri.startsWith("/a/") || uri.startsWith("/token")) {
+        if (uri.startsWith("/i/") || uri.startsWith("/a/")) {
             filterChain.doFilter(request, response);
         } else {
-            // 假设 token 在 Authorization 请求头中，格式为 "Bearer <token>"
+            // token 在 Authorization 请求头中，格式为 "Bearer <token>"
             String header = request.getHeader("Authorization");
             if (header != null && header.startsWith("Bearer ")) {
                 String token = header.substring(7);

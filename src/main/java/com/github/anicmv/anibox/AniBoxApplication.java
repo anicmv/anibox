@@ -7,6 +7,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.RedisSerializer;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 
 /**
@@ -15,6 +16,7 @@ import org.springframework.data.redis.serializer.RedisSerializer;
  * @description 入口类
  */
 @SpringBootApplication
+@EnableTransactionManagement
 @MapperScan("com.github.anicmv.anibox.mapper")
 public class AniBoxApplication implements CommandLineRunner {
 

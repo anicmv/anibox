@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,7 +34,7 @@ public class ImageController {
     private ImageDeleteService imageDeleteService;
 
     @Resource
-    private ImageAlbumService imageAlbumService;
+    private ImageEditService imageEditService;
 
     @Resource
     private ImageTimeLineService imageTimeLineService;
@@ -46,7 +45,8 @@ public class ImageController {
      *
      * @param files   根据文件上传
      * @param auth    鉴权
-     * @param album   相册
+     * @param albums  相册
+     * @param tags    标签
      * @param urls    链接
      * @param request 请求
      * @param name    自定义名
@@ -55,7 +55,8 @@ public class ImageController {
     @PostMapping("/upload")
     public ResponseEntity<JSONObject> uploadImage(
             MultipartFile[] files,
-            String album,
+            String albums,
+            String tags,
             Authentication auth,
             String urls,
             HttpServletRequest request,
@@ -63,9 +64,9 @@ public class ImageController {
     ) {
 
         if (ObjectUtil.isEmpty(urls)) {
-            return imageUploadFileService.uploadFile(files, album, request, name, auth);
+            return imageUploadFileService.uploadFile(files, albums, tags, request, name, auth);
         }
-        return imageUploadLinkService.uploadLink(urls, album, request, name, auth);
+        return imageUploadLinkService.uploadLink(urls, albums, tags, request, name, auth);
     }
 
 
@@ -108,7 +109,7 @@ public class ImageController {
      */
 
     @PostMapping("/delete")
-    @PreAuthorize("hasAnyAuthority(T(com.github.anicmv.anibox.constent.ImageConstants).ADMIN, T(com.github.anicmv.anibox.constent.ImageConstants).USER)")
+    //@PreAuthorize("hasAnyAuthority(T(com.github.anicmv.anibox.constent.ImageConstants).ADMIN, T(com.github.anicmv.anibox.constent.ImageConstants).USER)")
     public ResponseEntity<JSONObject> deleteImage(String urls, String ids, Authentication auth) {
         return imageDeleteService.deleteImage(urls, ids, auth);
     }
@@ -117,20 +118,22 @@ public class ImageController {
     /**
      * 通过图片url或者图片id批量修改图片相册
      *
-     * @param urls  链接
-     * @param ids   鉴权
-     * @param album 相册
+     * @param urls   链接
+     * @param ids    鉴权
+     * @param albums 相册
+     * @param tags 标签
      */
-    @PostMapping("/album")
-    public ResponseEntity<JSONObject> editAlbum(String urls, String ids, String album) {
-        return imageAlbumService.editAlbum(urls, ids, album);
+    @PostMapping("/edit")
+    public ResponseEntity<JSONObject> edit(String urls, String ids, String albums, String tags, Authentication auth) {
+        return imageEditService.edit(urls, ids, albums, tags, auth);
     }
 
 
     /**
      * 获取图片列表
      *
-     * @param album     相册
+     * @param albums    相册
+     * @param tags      标签
      * @param startTime 开始时间
      * @param endTime   结束时间
      * @param page      页
@@ -139,13 +142,14 @@ public class ImageController {
      */
     @PostMapping("/timeline")
     public ResponseEntity<JSONObject> timeline(
-            String album,
+            String albums,
+            String tags,
             String startTime,
             String endTime,
             Integer page,
             Integer size
     ) {
-        return imageTimeLineService.timeline(album, startTime, endTime, page, size);
+        return imageTimeLineService.timeline(albums, tags, startTime, endTime, page, size);
     }
 
 

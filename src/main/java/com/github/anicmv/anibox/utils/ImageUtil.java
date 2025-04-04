@@ -156,4 +156,5 @@ public class ImageUtil {
         ImgUtil.flush(image);
         return imageByte;
     }
+
 }

@@ -2,12 +2,13 @@ package com.github.anicmv.anibox.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.Date;
+import java.sql.Timestamp;
 
 /**
  * @author anicmv
@@ -51,11 +52,6 @@ public class Image implements Serializable {
     private String aliasName;
 
     /**
-     * 相册
-     */
-    private String album;
-
-    /**
      * 图片大小(kb)
      */
     private BigDecimal size;
@@ -95,9 +91,12 @@ public class Image implements Serializable {
      */
     private String uploadedIp;
 
-    private Date createdAt;
-
-    private Date updatedAt;
+    // 创建时间
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+    private Timestamp createTime;
+    // 更新时间
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+    private Timestamp updateTime;
 
     private static final long serialVersionUID = 1L;
 }
