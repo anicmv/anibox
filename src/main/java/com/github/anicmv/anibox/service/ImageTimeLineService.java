@@ -30,7 +30,6 @@ public class ImageTimeLineService extends ImageService {
 
 
     public ResponseEntity<JSONObject> timeline(
-            String albums,
             String tags,
             String startTime,
             String endTime,
@@ -38,15 +37,9 @@ public class ImageTimeLineService extends ImageService {
             Integer size
     ) {
         // 参数校验，避免空指针
-        albums = (albums == null) ? "" : albums;
         tags = (tags == null) ? "" : tags;
 
-        // 拆分相册和标签字符串，去空格、去重
-        List<String> albumList = Arrays.stream(albums.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .distinct()
-                .toList();
+        // 拆分标签字符串，去空格、去重
         List<String> tagList = Arrays.stream(tags.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
@@ -54,7 +47,7 @@ public class ImageTimeLineService extends ImageService {
                 .toList();
 
         // 使用 MyBatis-Plus 内置分页插件查询图片数据
-        Page<Image> pageResult = getImageList(albumList, tagList, startTime, endTime, page, size);
+        Page<Image> pageResult = getImageList(tagList, startTime, endTime, page, size);
 
         // 根据查询结果组装返回 JSON 数据
         List<JSONObject> imageJsonList = new ArrayList<>();
@@ -65,18 +58,8 @@ public class ImageTimeLineService extends ImageService {
         return super.success(imageJsonList);
     }
 
-    private Page<Image> getImageList(List<String> albumList, List<String> tagList, String startTime, String endTime, Integer page, Integer size) {
+    private Page<Image> getImageList(List<String> tagList, String startTime, String endTime, Integer page, Integer size) {
         QueryWrapper<Image> qw = new QueryWrapper<>();
-
-        // 添加相册条件：仅在 albumList 非空时添加
-        if (!albumList.isEmpty()) {
-            String albumInClause = albumList.stream()
-                    .map(s -> "'" + s + "'")
-                    .collect(Collectors.joining(","));
-            qw.inSql("id", "SELECT ia.image_id FROM image_album ia " +
-                    "JOIN album a ON ia.album_id = a.id " +
-                    "WHERE a.name IN (" + albumInClause + ")");
-        }
 
         // 添加标签条件：仅在 tagList 非空时添加
         if (!tagList.isEmpty()) {

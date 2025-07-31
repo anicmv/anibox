@@ -61,23 +61,3 @@ CREATE TABLE `image_tag`
     PRIMARY KEY (`image_id`, `tag_id`),
     KEY        `tag_id_index` (`tag_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-DROP TABLE IF EXISTS `album`;
-CREATE TABLE `album`
-(
-    `id`          bigint       NOT NULL AUTO_INCREMENT,
-    `name`        varchar(255) NOT NULL COMMENT '相册名称',
-    `description` varchar(500) DEFAULT NULL COMMENT '相册描述',
-    `create_time` TIMESTAMP    DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time` TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `album_name_unique` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-DROP TABLE IF EXISTS `image_album`;
-CREATE TABLE `image_album`
-(
-    `image_id` bigint NOT NULL COMMENT '图片ID',
-    `album_id` bigint NOT NULL COMMENT '相册ID',
-    PRIMARY KEY (`image_id`, `album_id`),
-    KEY        `album_id_index` (`album_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

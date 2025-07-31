@@ -34,7 +34,6 @@ public class ImageUploadLinkService extends ImageService {
 
     public ResponseEntity<JSONObject> uploadLink(
             String imageUrls,
-            String albums,
             String tags,
             HttpServletRequest request,
             String aliasName,
@@ -60,12 +59,8 @@ public class ImageUploadLinkService extends ImageService {
         // 存储tag
         List<Tag> tagList = tags != null ? super.saveTags(tags) : null;
 
-        // 存储album
-        List<Album> albumsList = albums != null ? super.saveAlbums(albums) : null;
-
-        // ImageTag ImageAlbum
+        // ImageTag
         List<ImageTag> imageTagList = new ArrayList<>();
-        List<ImageAlbum> imageAlbumList = new ArrayList<>();
 
         for (String imageUrl : imageUrlList) {
             HttpURLConnection connection = ImageUtil.getImageLinkConnection(imageUrl);
@@ -95,15 +90,6 @@ public class ImageUploadLinkService extends ImageService {
                             imageTagList.add(imageTag);
                         });
                     }
-
-                    if (albums != null) {
-                        albumsList.forEach(album -> {
-                            ImageAlbum imageAlbum = ImageAlbum.builder()
-                                    .imageId(image.getId())
-                                    .albumId(album.getId()).build();
-                            imageAlbumList.add(imageAlbum);
-                        });
-                    }
                     // 删除文件
                     FileUtil.del(imageFile);
                     imageList.add(image);
@@ -116,8 +102,7 @@ public class ImageUploadLinkService extends ImageService {
                 log.error(e.getMessage());
             }
         }
-        // 保存ImageTag ImageAlbum
-        super.saveAlbumList(imageAlbumList);
+        // 保存ImageTag
         super.saveTagList(imageTagList);
         super.updateUserImageCount(user, imageList.size() - toBeRemoved.size());
         return super.returnData(imageList);

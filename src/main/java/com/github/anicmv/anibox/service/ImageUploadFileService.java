@@ -32,7 +32,6 @@ public class ImageUploadFileService extends ImageService {
     @Transactional(rollbackFor = Exception.class)
     public ResponseEntity<JSONObject> uploadFile(
             MultipartFile[] files,
-            String albums,
             String tags,
             HttpServletRequest request,
             String aliasName,
@@ -59,17 +58,13 @@ public class ImageUploadFileService extends ImageService {
         // 存储tag
         List<Tag> tagList = tags != null ? super.saveTags(tags) : null;
 
-        // 存储album
-        List<Album> albumsList = albums != null ? super.saveAlbums(albums) : null;
-
         // 重复文件处理
         duplicateFileProcess(fileList, imageList, toBeRemoved);
         // 自定义名字重复处理
         String finalAliasName = aliseNameProcess(size, aliasName);
 
-        // ImageTag ImageAlbum
+        // ImageTag
         List<ImageTag> imageTagList = new ArrayList<>();
-        List<ImageAlbum> imageAlbumList = new ArrayList<>();
 
         // 上传
         fileList.forEach(file -> {
@@ -77,9 +72,9 @@ public class ImageUploadFileService extends ImageService {
             imageList.add(image);
         });
 
-        // 有个bug 存量图片 返回数据不更新tag album
+        // 有个bug 存量图片 返回数据不更新tag
         imageList.forEach(image -> {
-            // 根据image查询tag album
+            // 根据image查询tag
             if (tags != null) {
                 tagList.forEach(tag -> {
                     ImageTag imageTag = ImageTag.builder()
@@ -88,22 +83,12 @@ public class ImageUploadFileService extends ImageService {
                     imageTagList.add(imageTag);
                 });
             }
-
-            if (albums != null) {
-                albumsList.forEach(album -> {
-                    ImageAlbum imageAlbum = ImageAlbum.builder()
-                            .imageId(image.getId())
-                            .albumId(album.getId()).build();
-                    imageAlbumList.add(imageAlbum);
-                });
-            }
         });
 
-        // 保存ImageTag ImageAlbum
-        super.saveAlbumList(imageAlbumList);
+        // 保存ImageTag
         super.saveTagList(imageTagList);
         super.updateUserImageCount(user, fileList.size());
-        // 返回数据携带tags,albums
+        // 返回数据携带tags
         return super.returnData(imageList);
     }
 

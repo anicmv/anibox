@@ -45,7 +45,6 @@ public class ImageController {
      *
      * @param files   根据文件上传
      * @param auth    鉴权
-     * @param albums  相册
      * @param tags    标签
      * @param urls    链接
      * @param request 请求
@@ -55,7 +54,6 @@ public class ImageController {
     @PostMapping("/upload")
     public ResponseEntity<JSONObject> uploadImage(
             MultipartFile[] files,
-            String albums,
             String tags,
             Authentication auth,
             String urls,
@@ -64,9 +62,9 @@ public class ImageController {
     ) {
 
         if (ObjectUtil.isEmpty(urls)) {
-            return imageUploadFileService.uploadFile(files, albums, tags, request, name, auth);
+            return imageUploadFileService.uploadFile(files, tags, request, name, auth);
         }
-        return imageUploadLinkService.uploadLink(urls, albums, tags, request, name, auth);
+        return imageUploadLinkService.uploadLink(urls, tags, request, name, auth);
     }
 
 
@@ -120,19 +118,17 @@ public class ImageController {
      *
      * @param urls   链接
      * @param ids    鉴权
-     * @param albums 相册
      * @param tags 标签
      */
     @PostMapping("/edit")
-    public ResponseEntity<JSONObject> edit(String urls, String ids, String albums, String tags, Authentication auth) {
-        return imageEditService.edit(urls, ids, albums, tags, auth);
+    public ResponseEntity<JSONObject> edit(String urls, String ids, String tags, Authentication auth) {
+        return imageEditService.edit(urls, ids, tags, auth);
     }
 
 
     /**
      * 获取图片列表
      *
-     * @param albums    相册
      * @param tags      标签
      * @param startTime 开始时间
      * @param endTime   结束时间
@@ -142,14 +138,13 @@ public class ImageController {
      */
     @PostMapping("/timeline")
     public ResponseEntity<JSONObject> timeline(
-            String albums,
             String tags,
             String startTime,
             String endTime,
             Integer page,
             Integer size
     ) {
-        return imageTimeLineService.timeline(albums, tags, startTime, endTime, page, size);
+        return imageTimeLineService.timeline(tags, startTime, endTime, page, size);
     }
 
 

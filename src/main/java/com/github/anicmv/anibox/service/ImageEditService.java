@@ -23,7 +23,6 @@ public class ImageEditService extends ImageService {
 
     public ResponseEntity<JSONObject> edit(String urls,
                                            String ids,
-                                           String albums,
                                            String tags,
                                            Authentication auth) {
 
@@ -38,8 +37,7 @@ public class ImageEditService extends ImageService {
             return super.error("No images found");
         }
 
-        // 设置相册和标签
-        List<Album> albumList = super.saveAlbums(albums);
+        // 设置标签
         List<Tag> tagList = super.saveTags(tags);
 
         // 获取所有图片ID，方便删除原有关联数据
@@ -47,31 +45,19 @@ public class ImageEditService extends ImageService {
                 .map(Image::getId)
                 .collect(Collectors.toList());
 
-        // 删除这些图片原有的 image_album 记录
-        super.deleteImageAlbum(imageIds);
-
         // 删除这些图片原有的 image_tag 记录
         super.deleteImageTag(imageIds);
 
         // 构造新的关联数据
-        List<ImageAlbum> imageAlbumList = new ArrayList<>();
         List<ImageTag> imageTagList = new ArrayList<>();
 
-        imageList.forEach(image -> {
-            albumList.forEach(album ->
-                    imageAlbumList.add(
-                            ImageAlbum.builder().imageId(image.getId()).albumId(album.getId()).build()
-                    )
-            );
-            tagList.forEach(tag ->
-                    imageTagList.add(
-                            ImageTag.builder().imageId(image.getId()).tagId(tag.getId()).build()
-                    )
-            );
-        });
+        imageList.forEach(image -> tagList.forEach(tag ->
+                imageTagList.add(
+                        ImageTag.builder().imageId(image.getId()).tagId(tag.getId()).build()
+                )
+        ));
 
         // 插入新的关联数据
-        super.saveAlbumList(imageAlbumList);
         super.saveTagList(imageTagList);
 
         return super.success();

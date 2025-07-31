@@ -3,11 +3,13 @@
 一个Java语言编写的纯API无页面图床.
 
 ## 运行环境
+
 - JDK 21
 - MySQL 8.0
 - Redis 7.4
 
 ## 技术选型
+
 - Spring Boot 3.4.3
 - Spring Security
 - MyBatis Plus
@@ -75,8 +77,8 @@ rootPath: /image
 | 参数    | 类型   | 必须 | 示例                                          | 说明                                       |
 |-------|------|----|---------------------------------------------|------------------------------------------|
 | files | File | 可选 | Circle.png                                  | 需要上传的图片文件                                |
+| tags  | Text | 否  | blog                                        | 创建或指定图片要上传到的标签                           |
 | urls  | Text | 可选 | https://img.com/1.png,https://img.com/2.png | 若需要同时上传网络图片，可在这里传入网络图片 URL（或多个 URL）用逗号隔开 |
-| album | Text | 否  | blog                                        | 创建或指定图片要上传到的相册标识                         |
 | name  | Text | 否  | test                                        | 为上传文件指定自定义的名称                            |
 
 **示例请求**
@@ -86,7 +88,7 @@ POST /upload
 Content-Type: multipart/form-data
 
 urls: https://img1.doubanio.com/view/photo/l/public/p2915315229.webp,https://img3.doubanio.com/view/photo/l/public/p2919254593.webp
-album: douban
+tags: douban
 ```
 
 **成功响应**
@@ -101,7 +103,7 @@ album: douban
             "shortUrl": "https://jpg.moe/i/4l56tjpa.webp",
             "url": "https://jpg.moe/i/1742480920301gv.webp",
             "originName": "p2915315229.webp",
-            "album": "douban",
+            "tags": "douban",
             "size": 0.00,
             "md5": "ec86aee5528ba9e44660bac0e1d9bb2e",
             "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -116,7 +118,7 @@ album: douban
             "shortUrl": "https://jpg.moe/i/az3xgu9k.webp",
             "url": "https://jpg.moe/i/1742480938250uh.webp",
             "originName": "p2919254593.webp",
-            "album": "douban",
+            "tags": "douban",
             "size": 15.00,
             "md5": "57580d1dd5e255c6488a1b4833de67b1",
             "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -146,7 +148,7 @@ data字段说明:
 | shortUrl   | String | 短链接地址，用于快速访问已上传图片     |
 | url        | String | 已上传图片的完整访问 URL        |
 | originName | String | 上传时所使用的原始文件名称         |
-| album      | String | 相册标识                  |
+| tags       | String | 标签                    |
 | size       | Float  | 文件大小 (单位为 KB、MB 等)    |
 | md5        | Array  | 文件 MD5 值              |
 | sha1       | String | 文件 SHA1 值             |
@@ -216,7 +218,7 @@ ids: 7
 
 | 参数        | 类型   | 必须 | 示例     | 说明                           |
 |-----------|------|----|--------|------------------------------|
-| album     | Text | 否  | douban | 指定查询的相册                      |
+| tags      | Text | 否  | douban | 指定查询的标签                      |
 | startTime | 否    | 可选 | 7,8,9  | 图片上传时间(开始时间 格式为: yyyy-MM-dd) |
 | endTime   | 否    | 可选 | 7,8,9  | 图片上传时间(结束时间 格式为: yyyy-MM-dd) |
 | page      | Text | 否  | 0      | 第几页 默认0                      |
@@ -228,7 +230,7 @@ ids: 7
 POST /timeline
 Content-Type: multipart/form-data
 
-album: douban
+tags: douban
 startTime: 2025-03-01
 endTime: 2025-03-20
 page: 0
@@ -247,7 +249,7 @@ size: 50
             "shortUrl": "https://jpg.moe/i/4l56tjpa.webp",
             "url": "https://jpg.moe/i/1742480920301gv.webp",
             "originName": "p2915315229.webp",
-            "album": "douban",
+            "tags": "douban",
             "size": 0.00,
             "md5": "ec86aee5528ba9e44660bac0e1d9bb2e",
             "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -262,7 +264,7 @@ size: 50
             "shortUrl": "https://jpg.moe/i/az3xgu9k.webp",
             "url": "https://jpg.moe/i/1742480938250uh.webp",
             "originName": "p2919254593.webp",
-            "album": "douban",
+            "tags": "douban",
             "size": 15.00,
             "md5": "57580d1dd5e255c6488a1b4833de67b1",
             "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -280,9 +282,9 @@ size: 50
 
 与上传接口一致.
 
-### 相册管理接口
+### 编辑管理接口
 
-接口地址: `POST /album`   
+接口地址: `POST /edit`   
 接口描述: 用于修改图片相册   
 **请求头 (Headers)**
 
@@ -293,16 +295,16 @@ size: 50
 
 **请求参数 (Body - form-data)**
 
-| 参数    | 类型   | 必须 | 示例                              | 说明           |
-|-------|------|----|---------------------------------|--------------|
-| urls  | Text | 可选 | https://jpg.moe/i/az3xgu9k.webp | 更新该链接图片对应的相册 |
-| ids   | Text | 可选 | 7,8,9                           | 更新该id对应的相册   |
-| album | Text | 是  | douban                          | 相册名称         |
+| 参数   | 类型   | 必须 | 示例                              | 说明           |
+|------|------|----|---------------------------------|--------------|
+| urls | Text | 可选 | https://jpg.moe/i/az3xgu9k.webp | 更新该链接图片对应的相册 |
+| ids  | Text | 可选 | 7,8,9                           | 更新该id对应的相册   |
+| tags | Text | 是  | douban                          | 相册名称         |
 
 **示例请求**
 
 ```
-POST /album
+POST /edit
 Content-Type: multipart/form-data
 
 ids: 5,6
@@ -413,6 +415,7 @@ GET /xp
 - [ ] 随机图片加用户限制
 
 ## 不会搭建?
+
 > 可以到[Telegram群组](https://t.me/+q5wtfnj0kTs4MTRl)来讨论各种问题
 
 

@@ -58,13 +58,6 @@ public class ImageService {
     @Resource
     private ImageTagMapper imageTagMapper;
 
-    @Resource
-    private AlbumMapper albumMapper;
-
-    @Resource
-    private ImageAlbumMapper imageAlbumMapper;
-
-
     Image selectImageByMd5AndSha1(String md5, String sha1) {
         QueryWrapper<Image> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("md5", md5);
@@ -195,9 +188,8 @@ public class ImageService {
     Image saveImageInfo(Image.ImageBuilder imageBuilder) {
         Image image = imageBuilder.build();
         imageMapper.insert(image);
-        // 返回存储位置的访问路径（实际情况需// ImageTag ImageAlbum
+        // 返回存储位置的访问路径（实际情况需// ImageTag
         //        List<ImageTag> imageTagList = new ArrayList<>();
-        //        List<ImageAlbum> imageAlbumList = new ArrayList<>();ge要配合静态资源映射或另外提供图片访问接口）
         return image;
     }
 
@@ -239,10 +231,6 @@ public class ImageService {
         List<Tag> tagList = tagMapper.selectDistinctTagNames(image.getId());
         if (tagList != null) {
             data.putOpt("tags", tagList.stream().map(Tag::getName).collect(Collectors.joining(",")));
-        }
-        List<Album> albumList = albumMapper.selectDistinctAlbumNames(image.getId());
-        if (albumList != null) {
-            data.putOpt("albums", albumList.stream().map(Album::getName).collect(Collectors.joining(",")));
         }
         if (image.getAliasName() != null) {
             data.putOnce("aliasUrl", getUrl(image.getAliasName() + "." + image.getSuffix()));
@@ -436,47 +424,6 @@ public class ImageService {
         return result;
     }
 
-    public List<Album> saveAlbums(String albums) {
-        if (albums == null) {
-            return null;
-        }
-        // 分割、修剪并去重
-        List<String> albumNames = StrUtil.split(albums, ",").stream()
-                .map(String::trim)
-                .distinct()
-                .collect(Collectors.toList());
-
-        // 查询已存在的标签
-        QueryWrapper<Album> queryWrapper = new QueryWrapper<>();
-        queryWrapper.in("name", albumNames);
-        List<Album> existTags = albumMapper.selectList(queryWrapper);
-
-        // 将已存在的标签放入 Set 中，便于判断
-        Set<String> existTagNames = existTags.stream()
-                .map(Album::getName)
-                .collect(Collectors.toSet());
-
-        List<Album> result = new ArrayList<>();
-
-        for (String album : albumNames) {
-            if (existTagNames.contains(album)) {
-                // 已存在的标签取出来
-                Album existAlbum = existTags.stream()
-                        .filter(t -> t.getName().equals(album))
-                        .findFirst()
-                        .orElse(null);
-                result.add(existAlbum);
-            } else {
-                // 新建相册并插入数据库
-                Album newAlbum = Album.builder().name(album).build();
-                albumMapper.insert(newAlbum);
-                result.add(newAlbum);
-            }
-        }
-
-        return result;
-    }
-
 
     public List<Tag> selectTagList(String tags) {
         if (StrUtil.isEmpty(tags)) {
@@ -495,29 +442,6 @@ public class ImageService {
     }
 
 
-    public List<Album> selectAlbumList(String albums) {
-        if (StrUtil.isEmpty(albums)) {
-            return null;
-        }
-        List<String> albumList = Arrays.stream(albums.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .distinct()
-                .collect(Collectors.toList());
-
-        QueryWrapper<Album> qw = new QueryWrapper<>();
-        qw.in("name", albumList);
-
-        return albumMapper.selectList(qw);
-    }
-
-
-    public void saveAlbumList(List<ImageAlbum> imageAlbumList) {
-        if (imageAlbumList != null && !imageAlbumList.isEmpty()) {
-            imageAlbumMapper.insertOrUpdateBatch(imageAlbumList);
-        }
-    }
-
     public void saveTagList(List<ImageTag> imageTagList) {
         if (imageTagList != null && !imageTagList.isEmpty()) {
             imageTagMapper.insertOrUpdateBatch(imageTagList);
@@ -529,19 +453,10 @@ public class ImageService {
         return tagMapper.selectDistinctTagNames(imageId);
     }
 
-    public List<Album> getDistinctAlbum(Long imageId) {
-        return albumMapper.selectDistinctAlbumNames(imageId);
-    }
-
-    public void deleteImageAlbum(List<Long> imageIds) {
-        QueryWrapper<ImageAlbum> albumWrapper = new QueryWrapper<>();
-        albumWrapper.in("image_id", imageIds);
-        imageAlbumMapper.delete(albumWrapper);
-    }
 
     public void deleteImageTag(List<Long> tagIds) {
-        QueryWrapper<ImageTag> albumWrapper = new QueryWrapper<>();
-        albumWrapper.in("image_id", tagIds);
-        imageTagMapper.delete(albumWrapper);
+        QueryWrapper<ImageTag> tagWrapper = new QueryWrapper<>();
+        tagWrapper.in("image_id", tagIds);
+        imageTagMapper.delete(tagWrapper);
     }
 }
