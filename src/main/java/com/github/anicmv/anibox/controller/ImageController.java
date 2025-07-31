@@ -155,11 +155,19 @@ public class ImageController {
 
     /**
      * 随机图片
-     *
      * @return 图片
      */
-    @GetMapping("/random")
+    @GetMapping("/xp/{tags}")
+    public ResponseEntity<InputStreamResource> randomImage(@PathVariable String tags) {
+        return imageViewService.xp(tags);
+    }
+
+    /**
+     * 随机图片
+     * @return 图片
+     */
+    @GetMapping("/xp")
     public ResponseEntity<InputStreamResource> randomImage() {
-        return imageViewService.random();
+        return imageViewService.xp(null);
     }
 }

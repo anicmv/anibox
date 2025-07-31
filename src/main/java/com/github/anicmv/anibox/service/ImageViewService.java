@@ -106,8 +106,8 @@ public class ImageViewService extends ImageService {
     }
 
 
-    public ResponseEntity<InputStreamResource> random() {
-        Image image = super.randomImage();
+    public ResponseEntity<InputStreamResource> xp(String tags) {
+        Image image = super.randomImage(tags);
         if (image == null) {
             return ResponseEntity.notFound().build();
         }

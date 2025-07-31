@@ -1,6 +1,5 @@
 package com.github.anicmv.anibox.filter;
 
-import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.github.anicmv.anibox.entity.User;
 import com.github.anicmv.anibox.mapper.UserMapper;
@@ -36,7 +35,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
         String uri = request.getRequestURI();
-        if (uri.startsWith("/i/") || uri.startsWith("/a/")) {
+        if (uri.startsWith("/i/") || uri.startsWith("/a/") || uri.startsWith("/xp")) {
             filterChain.doFilter(request, response);
         } else {
             // token 在 Authorization 请求头中，格式为 "Bearer <token>"
@@ -60,7 +59,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     private User validateToken(String token) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("token", SecureUtil.md5(token));
+        queryWrapper.eq("token", token);
         return userMapper.selectOne(queryWrapper);
     }
 

@@ -9,7 +9,6 @@ CREATE TABLE `image`
     `origin_name` varchar(255) NOT NULL COMMENT '原始名称',
     `suffix`      varchar(32)  NOT NULL COMMENT '文件后缀',
     `alias_name`  varchar(255)  DEFAULT NULL COMMENT '别名',
-    `album`       varchar(255)  DEFAULT 'all' COMMENT '相册',
     `size`        decimal(8, 2) DEFAULT NULL COMMENT '图片大小(kb)',
     `md5`         varchar(32)  NOT NULL COMMENT '文件MD5',
     `sha1`        varchar(255) NOT NULL COMMENT '文件SHA1',
@@ -23,7 +22,6 @@ CREATE TABLE `image`
     UNIQUE KEY `short_key_unique` (`short_key`),
     UNIQUE KEY `name_unique` (`name`),
     KEY           `alias_name_index` (`alias_name`),
-    KEY           `album_index` (`album`),
     KEY           `md5_sha1_key` (`md5`,`sha1`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 DROP TABLE IF EXISTS `user`;

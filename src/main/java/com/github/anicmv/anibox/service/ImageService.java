@@ -295,15 +295,34 @@ public class ImageService {
     }
 
 
-    Image randomImage() {
-        QueryWrapper<Image> wrapper = new QueryWrapper<>();
-        wrapper.like("album", "random");
-        List<Image> images = imageMapper.selectList(wrapper);
-        if (ObjectUtil.isEmpty(images)) {
-            return null;
+    public Image randomImage(String tags) {
+        // 拆分tags字符串，过滤空值，去重
+        List<String> tagList;
+        if (StrUtil.isEmpty(tags)) {
+            tagList = new ArrayList<>();
+            tagList.add("xp");
+        } else {
+            tagList = new ArrayList<>(Arrays.stream(tags.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .distinct()
+                    .toList());
         }
-        int size = images.size();
-        return images.get(RandomUtil.randomInt(0, size));
+
+        // 构造IN条件字符串： 'tag1','tag2',...
+        String tagInClause = tagList.stream()
+                .map(tag -> "'" + tag + "'")
+                .collect(Collectors.joining(","));
+
+        // 使用QueryWrapper构造子查询，根据tag过滤图片
+        QueryWrapper<Image> wrapper = new QueryWrapper<>();
+        wrapper.inSql("id", "SELECT it.image_id " +
+                        "FROM image_tag it " +
+                        "JOIN tag t ON it.tag_id = t.id " +
+                        "WHERE t.name IN (" + tagInClause + ")")
+                .last("ORDER BY RAND() LIMIT 1");
+
+        return imageMapper.selectOne(wrapper);
     }
 
 

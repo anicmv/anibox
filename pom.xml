@@ -88,6 +88,24 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.httpcomponents.client5/httpclient5 -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.4.3</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.tinify/tinify -->
+<!--        <dependency>-->
+<!--            <groupId>com.tinify</groupId>-->
+<!--            <artifactId>tinify</artifactId>-->
+<!--            <version>1.8.8</version>-->
+<!--        </dependency>-->
+        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-compress -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.27.1</version>
+        </dependency>
     </dependencies>
 
     <build>
